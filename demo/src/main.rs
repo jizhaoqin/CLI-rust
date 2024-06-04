@@ -6,5 +6,8 @@ fn main() {
     println!("{str}");
     let array = vec![1, 2, 3, 4, 1];
     println!("{:?}", &array[..5]);
-    println!()
+    println!();
+    let a = str.lines().count();
+    let b = str.lines().count();
+    println!("{} {}", a, b);
 }
