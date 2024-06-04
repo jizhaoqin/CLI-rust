@@ -2,46 +2,27 @@ use anyhow::Result;
 use clap::Parser;
 
 #[derive(Parser)]
-/// Rust version of `wc`
 struct Args {
-    /// Input files
     files: Vec<String>,
 
-    /// Show byte count
-    #[arg(short('c'), long)]
-    bytes: bool,
-
-    /// Show character count
-    #[arg(short('m'), long)]
-    chars: bool,
-
-    /// Show line count
     #[arg(short, long)]
     lines: bool,
 
-    /// Show word count
     #[arg(short, long)]
     words: bool,
+
+    #[arg(short('c'), long)]
+    bytes: bool,
+
+    #[arg(short('m'), long)]
+    chars: bool,
 }
 
-// #[derive(PartialEq)]
 struct FileInfo {
     number_lines: usize,
     number_words: usize,
     number_bytes: usize,
     number_chars: usize,
-}
-
-impl std::ops::Add for FileInfo {
-    type Output = FileInfo;
-    fn add(self, rhs: Self) -> Self::Output {
-        FileInfo {
-            number_lines: self.number_lines + rhs.number_lines,
-            number_words: self.number_words + rhs.number_words,
-            number_bytes: self.number_bytes + rhs.number_bytes,
-            number_chars: self.number_chars + rhs.number_chars,
-        }
-    }
 }
 
 impl std::iter::Sum for FileInfo {
@@ -53,7 +34,12 @@ impl std::iter::Sum for FileInfo {
                 number_bytes: 0,
                 number_chars: 0,
             },
-            |acc_info, single_info| acc_info + single_info,
+            |acc_info, current_info| FileInfo {
+                number_lines: acc_info.number_lines + current_info.number_lines,
+                number_words: acc_info.number_words + current_info.number_words,
+                number_bytes: acc_info.number_bytes + current_info.number_bytes,
+                number_chars: acc_info.number_chars + current_info.number_chars,
+            },
         )
     }
 }
@@ -66,22 +52,20 @@ fn main() {
 }
 
 fn run(mut args: Args) -> Result<()> {
-    if [args.words, args.bytes, args.chars, args.lines]
+    if [args.lines, args.words, args.bytes, args.chars]
         .iter()
-        .all(|v| !v)
+        .all(|show| !show)
     {
         args.lines = true;
         args.words = true;
         args.bytes = true;
     }
-
     let mut files_info: Vec<FileInfo> = Vec::new();
-    // let mut total_info:FileInfo
     for file_name in args.files {
         match std::fs::read_to_string(&file_name) {
             Err(err) => eprintln!("{}: {}: {}", env!("CARGO_PKG_NAME"), file_name, err),
             Ok(contents) => {
-                let current_info = FileInfo {
+                let file_info = FileInfo {
                     number_lines: contents.lines().count(),
                     number_words: contents.split_whitespace().count(),
                     number_bytes: contents.as_bytes().iter().count(),
@@ -89,13 +73,13 @@ fn run(mut args: Args) -> Result<()> {
                 };
                 println!(
                     "{}{}{}{} {:<}",
-                    format_string(current_info.number_lines, args.lines),
-                    format_string(current_info.number_words, args.words),
-                    format_string(current_info.number_bytes, args.bytes),
-                    format_string(current_info.number_chars, args.chars),
+                    format_string(file_info.number_lines, args.lines),
+                    format_string(file_info.number_words, args.words),
+                    format_string(file_info.number_bytes, args.bytes),
+                    format_string(file_info.number_chars, args.chars),
                     file_name,
                 );
-                files_info.push(current_info);
+                files_info.push(file_info);
             }
         }
     }
