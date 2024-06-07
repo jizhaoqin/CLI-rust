@@ -1,4 +1,4 @@
 [workspace]
 
-members = ["demo", "headr", "echor", "catr", "wcr"]
+members = ["demo", "headr", "echor", "catr", "wcr", "uniqr"]
 resolver = "2"
