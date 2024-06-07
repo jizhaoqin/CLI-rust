@@ -1,13 +1,6 @@
 fn main() {
-    eprintln!("Hello, world!");
-    println!("test");
-    let str = "hello".to_string();
-    println!("{}", str);
-    println!("{str}");
-    let array = vec![1, 2, 3, 4, 1];
-    println!("{:?}", &array[..5]);
-    println!();
-    let a = str.lines().count();
-    let b = str.lines().count();
-    println!("{} {}", a, b);
+    let contents = std::fs::read_to_string("./file.in").unwrap();
+    for line in contents.lines() {
+        println!("{}", line);
+    }
 }
