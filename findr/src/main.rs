@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{ArgAction, Parser};
-use regex::Regex;
+// use regex::Regex;
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Parser)]
@@ -8,8 +8,8 @@ struct Args {
     #[arg(default_value = ".")]
     paths: Vec<String>,
 
-    #[arg(short('n'), value_parser(Regex::new), action(ArgAction::Append), num_args(0..))]
-    names: Vec<Regex>,
+    #[arg(short = 'n', action=ArgAction::Append, num_args=0..100)]
+    names: Vec<String>,
 }
 
 fn main() {
@@ -20,14 +20,7 @@ fn main() {
 }
 
 fn run(args: Args) -> Result<()> {
-    let name_filter = |entry: &DirEntry| {
-        args.names.is_empty()
-            || args
-                .names
-                .iter()
-                .any(|name| name.is_match(&entry.file_name().to_string_lossy()))
-    };
-
+    // TODO: main logic
     for path in args.paths.iter() {
         let entries = WalkDir::new(path)
             .into_iter()
@@ -37,12 +30,19 @@ fn run(args: Args) -> Result<()> {
                     None
                 }
                 Ok(entry) => Some(entry),
-            }) // filter 不改变类型, map 不改变长度, filter_map 既改变类型又改变长度
-            .filter(name_filter)
+            })
+            .filter(|entry: &DirEntry| {
+                args.names.is_empty()
+                    || args
+                        .names
+                        .iter()
+                        .any(|name| entry.path().display().to_string().contains(name))
+            })
             .map(|entry| entry.path().display().to_string())
             .collect::<Vec<_>>();
 
         println!("{}", entries.join("\n"));
     }
+    println!("{:?}", args.names);
     Ok(())
 }
