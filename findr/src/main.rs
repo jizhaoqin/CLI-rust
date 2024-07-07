@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{ArgAction, Parser};
-// use regex::Regex;
+use regex::Regex;
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Parser)]
@@ -9,7 +9,7 @@ struct Args {
     paths: Vec<String>,
 
     #[arg(short = 'n', action=ArgAction::Append, num_args=0..100)]
-    names: Vec<String>,
+    names: Vec<Regex>,
 }
 
 fn main() {
@@ -21,23 +21,27 @@ fn main() {
 
 fn run(args: Args) -> Result<()> {
     // TODO: main logic
+    let entry_filter = |entry_result| match entry_result {
+        Err(err) => {
+            eprint!("{}: {}", env!("CARGO_PKG_NAME"), err);
+            None
+        }
+        Ok(entry) => Some(entry),
+    };
+
+    let name_filter = |entry: &DirEntry| {
+        args.names.is_empty()
+            || args
+                .names
+                .iter()
+                .any(|name| name.is_match(&entry.file_name().to_string_lossy()))
+    };
+
     for path in args.paths.iter() {
         let entries = WalkDir::new(path)
             .into_iter()
-            .filter_map(|entry_result| match entry_result {
-                Err(err) => {
-                    eprint!("{}: {}", env!("CARGO_PKG_NAME"), err);
-                    None
-                }
-                Ok(entry) => Some(entry),
-            })
-            .filter(|entry: &DirEntry| {
-                args.names.is_empty()
-                    || args
-                        .names
-                        .iter()
-                        .any(|name| entry.path().display().to_string().contains(name))
-            })
+            .filter_map(entry_filter)
+            .filter(name_filter)
             .map(|entry| entry.path().display().to_string())
             .collect::<Vec<_>>();
 
